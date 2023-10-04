@@ -41,34 +41,59 @@ function main(canvas1, canvas2){
 
     // When you click in a triangle, it detects which one and colors it
     canvas2.addEventListener('mousedown', function(e){
-        click_point_tri(canvas2, e);
+        click_point_tri(canvas2, e, tri, nodal_coord);
     });
 
 
 }
 
-function click_point_tri(canvas, event, triangles, nodal_coord){
+function click_point_tri(canvas, event, triangles, nodal_coord) {
     const rect = canvas.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
-    pos = [x,y];
-    console.log(pos);  //register the point in the console
-    draw_point(canvas, pos[0], pos[1], "red");
+    pos = [x, y];
+    console.log(pos);  // Register the point in the console
 
-    A_min=get_mat_coord(nodal_coord, triangles, 0,0);
-    B_min=get_mat_coord(nodal_coord, triangles, 0,1);
-    C_min=get_mat_coord(nodal_coord, triangles, 0,2);
+    for (let i = 0; i < triangles.length; i++) {
+        // Triangle i
+        A = get_mat_coord(nodal_coord, triangles, i, 0);
+        B = get_mat_coord(nodal_coord, triangles, i, 1);
+        C = get_mat_coord(nodal_coord, triangles, i, 2);
 
-    dist_A_x = Math.abs(x-A_min[0]); dist_A_y = Math.abs(y-A_min[1]);
-    dist_B_x = Math.abs(x-B_min[0]); dist_B_y = Math.abs(y-B_min[1]);
-    dist_C_x = Math.abs(x-C_min[0]); dist_C_y = Math.abs(y-C_min[1]);
-    for (let i = 1 ; i<triangles.length ; i++){
-        A = get_mat_coord(nodal_coord, triangles, i,0);
-        B = get_mat_coord(nodal_coord, triangles, i,1);
-        C = get_mat_coord(nodal_coord, triangles, i,2);
+        // Color the interior of the triangle when you click inside
+        if (isInside(A, B, C, pos)) {
+            // Draw the green-filled triangle
+            fill_triangle(canvas, A, B, C, "green");
+            draw_point(canvas, pos[0], pos[1], "red");
+            break;
+        }
     }
+}
+function isInside(A, B, C, pos) {
+    // Calculate area of triangle ABC
+    var A_area = area(A[0], A[1], B[0], B[1], C[0], C[1]);
+    // Calculate area of three sub-triangles with the given point
+    var P_area = area(pos[0], pos[1], B[0], B[1], C[0], C[1]);
+    var Q_area = area(A[0], A[1], pos[0], pos[1], C[0], C[1]);
+    var R_area = area(A[0], A[1], B[0], B[1], pos[0], pos[1]);
+    // Check if the sum of sub-triangle areas is approximately equal to the original triangle area
+    return Math.abs(A_area - (P_area + Q_area + R_area)) < 1e-6;
+}
 
 
+function area(x1, y1, x2, y2, x3, y3){
+    return Math.abs((x1*(y2-y3) + x2*(y3-y1)+ x3*(y1-y2))/2.0);
+}
+
+function fill_triangle(canvas, A, B, C, color) {
+    const context = canvas.getContext('2d');
+    context.fillStyle = color;
+    context.beginPath();
+    context.moveTo(A[0], A[1]);
+    context.lineTo(B[0], B[1]);
+    context.lineTo(C[0], C[1]);
+    context.closePath();
+    context.fill();
 }
 
 function get_mat_coord(nodal_coord, tri, i, j){
@@ -97,7 +122,7 @@ function click_point(canvas, event, nodes){
         
         den = ((x2-x1)*(y4-y3)-(x4-x3)*(y2-y1));  
         
-        if (den!=0){   //If lines are note parallel
+        if (den!=0){   //If lines are not parallel
 
             ua=((x4-x3)*(y1-y3)-(x1-x3)*(y4-y3))/den;
             ub=((x2-x1)*(y1-y3)-(x1-x3)*(y2-y1))/den;
