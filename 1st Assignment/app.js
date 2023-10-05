@@ -105,40 +105,56 @@ function click_point(canvas, event, nodes){
     const rect = canvas.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
-    pos = [x,y];
-    console.log(pos);  //register the point in the console
+    pos = [x, y];
+    console.log(pos);  // Register the point in the console
     draw_point(canvas, pos[0], pos[1], "red");
     nodes.push(pos);
-    if (nodes.length==2){
+
+    if (nodes.length === 2) {
         draw_edge(nodes[0], nodes[1], canvas);
     }
-    if (nodes.length==4){
+    
+    if (nodes.length === 4) {
         draw_edge(nodes[2], nodes[3], canvas);
 
-        x1=nodes[0][0]; y1=nodes[0][1];
-        x2=nodes[1][0]; y2=nodes[1][1];
-        x3=nodes[2][0]; y3=nodes[2][1];
-        x4=nodes[3][0]; y4=nodes[3][1];
-        
-        den = ((x2-x1)*(y4-y3)-(x4-x3)*(y2-y1));  
-        
-        if (den!=0){   //If lines are not parallel
+        const x1 = nodes[0][0], y1 = nodes[0][1];
+        const x2 = nodes[1][0], y2 = nodes[1][1];
+        const x3 = nodes[2][0], y3 = nodes[2][1];
+        const x4 = nodes[3][0], y4 = nodes[3][1];
 
-            ua=((x4-x3)*(y1-y3)-(x1-x3)*(y4-y3))/den;
-            ub=((x2-x1)*(y1-y3)-(x1-x3)*(y2-y1))/den;
+        const den = (x2 - x1) * (y4 - y3) - (x4 - x3) * (y2 - y1);
+        const tolerance_1 = 100;
+        const tolerance_2 = 1e-6;
+        console.log("den is - ", den);
 
-            if (ua>0 && ub<1 && ub>0 && ub<1){  //If lines are not coincident
-                x_intersect=x1 + ua*(x2-x1);
-                y_interesct=y1 + ua*(y2-y1);
+        if (Math.abs(den) > 50 || Math.abs(den) < -50) {   // If lines are not parallel
+            const ua = ((x4 - x3) * (y1 - y3) - (x1 - x3) * (y4 - y3)) / den;
+            const ub = ((x2 - x1) * (y1 - y3) - (x1 - x3) * (y2 - y1)) / den;
 
-                draw_point(canvas, x_intersect, y_interesct, "green");
+            if (ua > 0 && ub < 1 && ub > 0 && ub < 1) {  // If lines are not coincident
+                const x_intersect = x1 + ua * (x2 - x1);
+                const y_intersect = y1 + ua * (y2 - y1);
+
+                draw_point(canvas, x_intersect, y_intersect, "green");
+            }
+        } else {
+            // Lines are parallel, check for coincidence
+            const distance = Math.sqrt((x3 - x1) ** 2 + (y3 - y1) ** 2);
+            console.log("distance is - ", distance);
+
+            if (distance < 5 && distance > -5) {
+                console.log("Lines are coincident");
+                draw_special_edge(nodes[2], nodes[3], canvas);
+                draw_special_edge(nodes[0], nodes[1], canvas);
+            } else {
+                console.log("Lines are parallel but not coincident");
             }
         }
 
-        while (nodes.length>0) nodes.pop(); //Empty the list so we can focus on the next clicks
+        while (nodes.length > 0) nodes.pop(); // Empty the list for the next clicks
     }
-
 }
+
 
 function draw_point(canvas, x, y, color){
     context = canvas.getContext('2d');
@@ -152,6 +168,15 @@ function draw_point(canvas, x, y, color){
 function draw_edge(A,B,canvas){
     context = canvas.getContext('2d');
     context.strokeStyle = "black";
+    context.beginPath(); //Begins the segment
+    context.moveTo(A[0], A[1]); //Coordinates at the begin of the segment
+    context.lineTo(B[0], B[1]); //Coordinates at the end of the segment
+    context.stroke() ; //Draws a line
+}
+
+function draw_special_edge(A,B,canvas){
+    context = canvas.getContext('2d');
+    context.strokeStyle = "yellow";
     context.beginPath(); //Begins the segment
     context.moveTo(A[0], A[1]); //Coordinates at the begin of the segment
     context.lineTo(B[0], B[1]); //Coordinates at the end of the segment
