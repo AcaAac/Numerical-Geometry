@@ -140,9 +140,11 @@ function click_point(canvas, event, nodes){
         } else {
             // Lines are parallel, check for coincidence
             const distance = Math.sqrt((x3 - x1) ** 2 + (y3 - y1) ** 2);
+            const distance_2 = Math.sqrt((x4 - x2) ** 2 + (y4 - y2) ** 2);
             console.log("distance is - ", distance);
+            console.log("distance_2 is - ", distance_2);
 
-            if (distance < 5 && distance > -5) {
+            if (distance < 4 && distance > -4 && distance_2 < 4 && distance_2 > -4) {
                 console.log("Lines are coincident");
                 draw_special_edge(nodes[2], nodes[3], canvas);
                 draw_special_edge(nodes[0], nodes[1], canvas);
