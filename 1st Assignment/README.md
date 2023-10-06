@@ -11,8 +11,8 @@ The goal of both exercises was to increase the group's sensibility and awarness 
 
 ## Exercise 1:
 
-- ***User Interaction*** : Clicking on "canvas1" creates red dots, with each click adding a dot.
-- ***Segment Drawing*** : Every two clicks result in a line drawn between two consecutive red dots.
+- ***User Interaction***: Clicking on "canvas1" creates red dots, with each click adding a dot.
+- ***Segment Drawing***: Every two clicks result in a line drawn between two consecutive red dots.
 - ***Intersection Detection***: If a pair of lines (formed by every two segments) intersects, a green dot appears at the intersection point.
 - ***Coincident Lines***: If the lines are coincident (degenerate case), a yellow line indicates the coincidence.
 
@@ -28,7 +28,7 @@ The goal of both exercises was to increase the group's sensibility and awarness 
  - Ensure the code is executed in a browser environment.
  - Two HTML canvas elements, "canvas1" and "canvas2," are required.
 
-***2.Exercise 1 - "canvas1"***:
+***2. Exercise 1 - "canvas1"***:
 
  - Click on "canvas1" to draw red dots and form line segments.
  - Green dots appear at the intersection points of every two consecutive line segments.
@@ -50,4 +50,4 @@ A bonus function named zoomWheel is available for zooming using the mouse wheel.
   - Integrate the zoomWheel function into the main code.
   - Call zoomWheel when the mouse wheel is scrolled.
    
-Note: Ensure that the HTML structure and necessary mesh data are provided for the code to execute correctly.
+***Note***: Ensure that the HTML structure and necessary mesh data are provided for the code to execute correctly.
