@@ -36,15 +36,21 @@ function main(canvas1, canvas2){
         draw_edge(A,B, canvas2);
         draw_edge(B,C, canvas2);
         draw_edge(C,A, canvas2);
-    }
 
+        //Display of the nodes/triangles numbers
+        x_G = (A[0]+B[0]+C[0])/3;
+        y_G = (A[1]+B[1]+C[1])/3;
+        const ctx = canvas2.getContext('2d');
+        ctx.fillText((i+1).toString(), x_G, y_G);
+        ctx.fillText(tri[i][0].toString(), A[0], A[1]);
+        ctx.fillText(tri[i][1].toString(), B[0], B[1]);
+        ctx.fillText(tri[i][2].toString(), C[0], C[1]);
+    }
 
     // When you click in a triangle, it detects which one and colors it
     canvas2.addEventListener('mousedown', function(e){
         click_point_tri(canvas2, e, tri, nodal_coord);
     });
-
-
 }
 
 function click_point_tri(canvas, event, triangles, nodal_coord) {
@@ -184,8 +190,6 @@ function draw_special_edge(A,B,canvas){
     context.lineTo(B[0], B[1]); //Coordinates at the end of the segment
     context.stroke() ; //Draws a line
 }
-
-
 
 //Bonus points
 
