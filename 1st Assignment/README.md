@@ -23,12 +23,12 @@ The goal of both exercises was to increase the group's sensibility and awarness 
 
 ## Instructions
 
-1. ***Run the Code***:
+***1. Run the Code***:
 
  - Ensure the code is executed in a browser environment.
  - Two HTML canvas elements, "canvas1" and "canvas2," are required.
 
-2. ***Exercise 1 - "canvas1"***:
+***2.Exercise 1 - "canvas1"***:
 
  - Click on "canvas1" to draw red dots and form line segments.
  - Green dots appear at the intersection points of every two consecutive line segments.
@@ -47,7 +47,7 @@ The goal of both exercises was to increase the group's sensibility and awarness 
 A bonus function named zoomWheel is available for zooming using the mouse wheel. To enable zooming:
 
 - ***Integration (Bonus)***:
- - Integrate the zoomWheel function into the main code.
- - Call zoomWheel when the mouse wheel is scrolled.
+  - Integrate the zoomWheel function into the main code.
+  - Call zoomWheel when the mouse wheel is scrolled.
    
 Note: Ensure that the HTML structure and necessary mesh data are provided for the code to execute correctly.
