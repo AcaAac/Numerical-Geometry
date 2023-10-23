@@ -7,15 +7,13 @@ function setup_triangle_location(mesh, canvas) {
     	const x = e.clientX - rect.left;
     	const y = e.clientY - rect.top;
     	pos = [x, y];
-		draw_point(canvas, x,y, 'red');
 
 		//Selection of the arbitrary triangle
 		let current_tri = mesh.faces[0];
-		const first_vertex_pos = current_tri.incidentEdge.orig.pos;
-
+		const first_vertex_pos_x = (current_tri.incidentEdge.orig.pos[0] +  current_tri.incidentEdge.dest.pos[0] + current_tri.incidentEdge.next.dest.pos[0])/3;
+		const first_vertex_pos_y = (current_tri.incidentEdge.orig.pos[1] +  current_tri.incidentEdge.dest.pos[1] + current_tri.incidentEdge.next.dest.pos[1])/3;
+		const first_vertex_pos=[first_vertex_pos_x, first_vertex_pos_y];
 		
-		//Draw line between the target point and the arbitrary vertex
-		draw_edge(pos, first_vertex_pos, canvas);
 
 		//Marching Triangle algorithm
 		let faces_visited=[];
@@ -29,80 +27,161 @@ function setup_triangle_location(mesh, canvas) {
 
 			if (isInside(vert1, vert2, vert3, pos)){
 				fill_triangle(canvas, vert1, vert2, vert3, 'green');
+				//Draw line between the target point and the arbitrary vertex
+				draw_edge(pos, first_vertex_pos, canvas);
+				draw_point(canvas, x,y, 'red');
 				init=false;
 				return;
 			}
 
-			const seg_12 = [vert1, vert2];
-			const seg_23 = [vert2, vert3];
-			const seg_31 = [vert3, vert1];
+			else {
+				const seg12 = [vert1, vert2];
+				const seg23 = [vert2, vert3];
+				const seg31 = [vert3, vert1];
 
-			if (!seg_12.includes(first_vertex_pos) && !faces_visited.includes(current_tri.id) && 
-			intersect(seg_12, target_seg)){
-				current_tri=current_tri.incidentEdge.oppo.incidentFace;
-				faces_visited.push(current_tri.id);
-			} else if (!faces_visited.includes(current_tri.id) && 
-			intersect(seg_23, target_seg)){
-				current_tri=current_tri.incidentEdge.next.oppo.incidentFace;
-				faces_visited.push(current_tri.id);
-			} else if (!faces_visited.includes(current_tri.id) && 
-			intersect(seg_31, target_seg)){
-				current_tri=current_tri.incidentEdge.next.next.oppo.incidentFace;
-				faces_visited.push(current_tri.id);
-			} else if (!faces_visited.includes(current_tri.id)){
-				current_tri=current_tri.incidentEdge.next.oppo.incidentFace;
-				faces_visited.push(current_tri.id);
-				console.log(faces_visited);
+				if (intersect(seg12, target_seg) && !faces_visited.includes(current_tri.incidentEdge.oppo.incidentFace.id)){
+					faces_visited.push(current_tri.id);
+					fill_triangle(canvas, vert1, vert2, vert3, 'gray');
+					current_tri=current_tri.incidentEdge.oppo.incidentFace;
+				} else if (intersect(seg23, target_seg) && !faces_visited.includes(current_tri.incidentEdge.next.oppo.incidentFace.id)){
+					faces_visited.push(current_tri.id);
+					fill_triangle(canvas, vert1, vert2, vert3, 'gray');
+					current_tri=current_tri.incidentEdge.next.oppo.incidentFace;
+				} else if (intersect(seg31, target_seg) && !faces_visited.includes(current_tri.incidentEdge.next.next.oppo.incidentFace.id)){
+					faces_visited.push(current_tri.id);
+					fill_triangle(canvas, vert1, vert2, vert3, 'gray');
+					current_tri=current_tri.incidentEdge.next.next.oppo.incidentFace;
+				}
 			}
-
 		}
-
-		
 	});
 }
-
-
-function find_orientation(p1, p2, p3){  
-	const o = (p2[1] - p1[1]) * (p3[0] - p2[0]) - (p2[0] - p1[0]) * (p3[1] - p2[1]);
-
-	if (o==0) return 0; //collinear
-	if (o<0) return 1; //counterclock wise
-	return 2; //clock wise 
-}
-
-function intersect(seg1, seg2){
-	const o1 = find_orientation(seg1[0], seg2[0], seg1[1]); 
-	const o2 = find_orientation(seg1[0], seg2[0], seg2[1]);
-	const o3 = find_orientation(seg1[1], seg2[1], seg1[0]);
-	const o4 = find_orientation(seg1[1], seg2[1], seg2[1]);
-
-	if (o1!=o2 && o3!=o4) return true;
-	return false;
-}
-
-
-function isInside(A, B, C, pos) {
-    // Calculate area of triangle ABC
-    var A_area = area(A[0], A[1], B[0], B[1], C[0], C[1]);
-    // Calculate area of three sub-triangles with the given point
-    var P_area = area(pos[0], pos[1], B[0], B[1], C[0], C[1]);
-    var Q_area = area(A[0], A[1], pos[0], pos[1], C[0], C[1]);
-    var R_area = area(A[0], A[1], B[0], B[1], pos[0], pos[1]);
-    // Check if the sum of sub-triangle areas is approximately equal to the original triangle area
-    return Math.abs(A_area - (P_area + Q_area + R_area)) < 1e-6;
-}
-
-function area(x1, y1, x2, y2, x3, y3){
-    return Math.abs((x1*(y2-y3) + x2*(y3-y1)+ x3*(y1-y2))/2.0);
-}
-
 
 function setup_segment_location(mesh, canvas) {
 	console.log("Hello from setup_segment_location");
 	draw_mesh(mesh, canvas);
-	// TODO 
+	nodes=[];
+	let target_tri;
+	canvas.addEventListener("click", (e) =>{
+		const rect = canvas.getBoundingClientRect();
+    	const x = e.clientX - rect.left;
+    	const y = e.clientY - rect.top;
+    	pos = [x, y];
 
+		//Selection of the arbitrary triangle
+		let current_tri = mesh.faces[0];
+		const first_vertex_pos_x = (current_tri.incidentEdge.orig.pos[0] +  current_tri.incidentEdge.dest.pos[0] + current_tri.incidentEdge.next.dest.pos[0])/3;
+		const first_vertex_pos_y = (current_tri.incidentEdge.orig.pos[1] +  current_tri.incidentEdge.dest.pos[1] + current_tri.incidentEdge.next.dest.pos[1])/3;
+		const first_vertex_pos=[first_vertex_pos_x, first_vertex_pos_y];
+		
+
+		//Marching Triangle algorithm
+		let faces_visited=[];
+		const target_seg = [first_vertex_pos, pos];
+		let init=true;
+
+		if (nodes.length===0){
+			while(init){
+				const vert1 = current_tri.incidentEdge.orig.pos;
+				const vert2 = current_tri.incidentEdge.dest.pos;
+				const vert3 = current_tri.incidentEdge.next.dest.pos;
 	
+				if (isInside(vert1, vert2, vert3, pos)){
+					init=false;
+					target_tri=current_tri;
+				}
+	
+				else {
+					const seg12 = [vert1, vert2];
+					const seg23 = [vert2, vert3];
+					const seg31 = [vert3, vert1];
+	
+					if (intersect(seg12, target_seg) && !faces_visited.includes(current_tri.incidentEdge.oppo.incidentFace.id)){
+						faces_visited.push(current_tri.id);
+						current_tri=current_tri.incidentEdge.oppo.incidentFace;
+					} else if (intersect(seg23, target_seg) && !faces_visited.includes(current_tri.incidentEdge.next.oppo.incidentFace.id)){
+						faces_visited.push(current_tri.id);
+						current_tri=current_tri.incidentEdge.next.oppo.incidentFace;
+					} else if (intersect(seg31, target_seg) && !faces_visited.includes(current_tri.incidentEdge.next.next.oppo.incidentFace.id)){
+						faces_visited.push(current_tri.id);
+						current_tri=current_tri.incidentEdge.next.next.oppo.incidentFace;
+					}
+				}
+			}
+		}
+
+		draw_point(canvas, x,y, 'red');
+		nodes.push(pos);
+
+		if (nodes.length === 2){
+			const new_target = [nodes[0], nodes[1]];
+	
+			let new_faces=[];
+			init=true;
+
+			while(init){
+				const vert1 = target_tri.incidentEdge.orig.pos;
+				const vert2 = target_tri.incidentEdge.dest.pos;
+				const vert3 = target_tri.incidentEdge.next.dest.pos;
+	
+				if (isInside(vert1, vert2, vert3, pos)){
+					draw_point(canvas, x,y, 'red');
+					init=false;
+				}
+	
+				else {
+					const seg12 = [vert1, vert2];
+					const seg23 = [vert2, vert3];
+					const seg31 = [vert3, vert1];
+	
+					if (intersect(seg12, new_target) && !new_faces.includes(target_tri.incidentEdge.oppo.incidentFace.id)){
+						new_faces.push(target_tri.id);
+						target_tri=target_tri.incidentEdge.oppo.incidentFace;
+						compute_intersection(seg12, new_target, canvas);
+					} else if (intersect(seg23, new_target) && !new_faces.includes(target_tri.incidentEdge.next.oppo.incidentFace.id)){
+						new_faces.push(target_tri.id);
+						target_tri=target_tri.incidentEdge.next.oppo.incidentFace;
+						compute_intersection(seg23, new_target, canvas);
+					} else if (intersect(seg31, new_target) && !new_faces.includes(target_tri.incidentEdge.next.next.oppo.incidentFace.id)){
+						new_faces.push(target_tri.id);
+						target_tri=target_tri.incidentEdge.next.next.oppo.incidentFace;
+						compute_intersection(seg31, new_target, canvas);
+					}
+				}
+				
+			}
+			draw_edge(nodes[0], nodes[1], canvas, 'red')
+			nodes.pop();
+			nodes.pop();
+	
+
+		}
+
+	});
+
+}
+
+function compute_intersection(seg1, seg2, canvas){
+	const x1 = seg1[0][0] ; const y1 = seg1[0][1];
+	const x2 = seg1[1][0] ; const y2 = seg1[1][1];
+	const x3 = seg2[0][0] ; const y3 = seg2[0][1];
+	const x4 = seg2[1][0] ; const y4 = seg2[1][1];
+
+	const den = (x2 - x1) * (y4 - y3) - (x4 - x3) * (y2 - y1);
+    const tolerance_1 = 100;
+    const tolerance_2 = 1e-6;
+
+    if (Math.abs(den) > 100 || Math.abs(den) < -100) {   // If lines are not parallel
+		const ua = ((x4 - x3) * (y1 - y3) - (x1 - x3) * (y4 - y3)) / den;
+		const ub = ((x2 - x1) * (y1 - y3) - (x1 - x3) * (y2 - y1)) / den;
+
+		if (ua > 0 && ua < 1 && ub > 0 && ub < 1) {  // If lines are not coincident
+			const x_intersect = x1 + ua * (x2 - x1);
+			const y_intersect = y1 + ua * (y2 - y1);
+
+			draw_point(canvas, x_intersect, y_intersect, "green");
+		}
+	}
 }
 
 function create_mesh(mesh_data) {    //mesh_data = mesh_small.json
@@ -246,4 +325,37 @@ function fill_triangle(canvas, A, B, C, color) {
     context.lineTo(C[0], C[1]);
     context.closePath();
     context.fill();
+}
+
+function find_orientation(p1, p2, p3){  
+	const o = (p2[1] - p1[1]) * (p3[0] - p2[0]) - (p2[0] - p1[0]) * (p3[1] - p2[1]);
+
+	if (o==0) return 0; //collinear
+	if (o<0) return 1; //counterclock wise
+	return 2; //clock wise 
+}
+
+function intersect(seg1, seg2){
+	const o1 = find_orientation(seg1[0], seg2[0], seg1[1]); 
+	const o2 = find_orientation(seg1[0], seg2[0], seg2[1]);
+	const o3 = find_orientation(seg1[0], seg2[1], seg1[1]);
+	const o4 = find_orientation(seg1[1], seg2[0], seg2[1]);
+
+	if (o1!=o3 && o2!=o4) return true;
+	return false;
+}
+
+function isInside(A, B, C, pos) {
+    // Calculate area of triangle ABC
+    var A_area = area(A[0], A[1], B[0], B[1], C[0], C[1]);
+    // Calculate area of three sub-triangles with the given point
+    var P_area = area(pos[0], pos[1], B[0], B[1], C[0], C[1]);
+    var Q_area = area(A[0], A[1], pos[0], pos[1], C[0], C[1]);
+    var R_area = area(A[0], A[1], B[0], B[1], pos[0], pos[1]);
+    // Check if the sum of sub-triangle areas is approximately equal to the original triangle area
+    return Math.abs(A_area - (P_area + Q_area + R_area)) < 1e-6;
+}
+
+function area(x1, y1, x2, y2, x3, y3){
+    return Math.abs((x1*(y2-y3) + x2*(y3-y1)+ x3*(y1-y2))/2.0);
 }
