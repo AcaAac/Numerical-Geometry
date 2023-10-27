@@ -43,14 +43,17 @@ function setup_triangle_location(mesh, canvas) {
 					faces_visited.push(current_tri.id);
 					fill_triangle(canvas, vert1, vert2, vert3, 'gray');
 					current_tri=current_tri.incidentEdge.oppo.incidentFace;
+					draw_edge(seg12[0], seg12[1], canvas, 'yellow')
 				} else if (intersect(seg23, target_seg) && !faces_visited.includes(current_tri.incidentEdge.next.oppo.incidentFace.id)){
 					faces_visited.push(current_tri.id);
 					fill_triangle(canvas, vert1, vert2, vert3, 'gray');
 					current_tri=current_tri.incidentEdge.next.oppo.incidentFace;
+					draw_edge(seg23[0], seg23[1], canvas, 'yellow')
 				} else if (intersect(seg31, target_seg) && !faces_visited.includes(current_tri.incidentEdge.next.next.oppo.incidentFace.id)){
 					faces_visited.push(current_tri.id);
 					fill_triangle(canvas, vert1, vert2, vert3, 'gray');
 					current_tri=current_tri.incidentEdge.next.next.oppo.incidentFace;
+					draw_edge(seg31[0], seg31[1], canvas, 'yellow')
 				}
 			}
 		}
@@ -99,12 +102,15 @@ function setup_segment_location(mesh, canvas) {
 					if (intersect(seg12, target_seg) && !faces_visited.includes(current_tri.incidentEdge.oppo.incidentFace.id)){
 						faces_visited.push(current_tri.id);
 						current_tri=current_tri.incidentEdge.oppo.incidentFace;
+						// draw_edge(seg12[0], seg12[1], canvas, 'yellow')
 					} else if (intersect(seg23, target_seg) && !faces_visited.includes(current_tri.incidentEdge.next.oppo.incidentFace.id)){
 						faces_visited.push(current_tri.id);
 						current_tri=current_tri.incidentEdge.next.oppo.incidentFace;
+						// draw_edge(seg23[0], seg23[1], canvas, 'yellow')
 					} else if (intersect(seg31, target_seg) && !faces_visited.includes(current_tri.incidentEdge.next.next.oppo.incidentFace.id)){
 						faces_visited.push(current_tri.id);
 						current_tri=current_tri.incidentEdge.next.next.oppo.incidentFace;
+						// draw_edge(seg31[0], seg31[1], canvas, 'yellow')
 					}
 				}
 			}
@@ -138,14 +144,17 @@ function setup_segment_location(mesh, canvas) {
 						new_faces.push(target_tri.id);
 						target_tri=target_tri.incidentEdge.oppo.incidentFace;
 						compute_intersection(seg12, new_target, canvas);
+						draw_edge(seg12[0], seg12[1], canvas, 'blue')
 					} else if (intersect(seg23, new_target) && !new_faces.includes(target_tri.incidentEdge.next.oppo.incidentFace.id)){
 						new_faces.push(target_tri.id);
 						target_tri=target_tri.incidentEdge.next.oppo.incidentFace;
 						compute_intersection(seg23, new_target, canvas);
+						draw_edge(seg23[0], seg23[1], canvas, 'blue')
 					} else if (intersect(seg31, new_target) && !new_faces.includes(target_tri.incidentEdge.next.next.oppo.incidentFace.id)){
 						new_faces.push(target_tri.id);
 						target_tri=target_tri.incidentEdge.next.next.oppo.incidentFace;
 						compute_intersection(seg31, new_target, canvas);
+						draw_edge(seg31[0], seg31[1], canvas, 'blue')
 					}
 				}
 				
@@ -307,9 +316,9 @@ function draw_point(canvas, x, y, color){
     context.fill();
 }
 
-function draw_edge(A,B,canvas){
+function draw_edge(A,B,canvas, color){
     context = canvas.getContext('2d');
-    context.strokeStyle = "red";
+    context.strokeStyle = color;
     context.beginPath(); //Begins the segment
     context.moveTo(A[0], A[1]); //Coordinates at the begin of the segment
     context.lineTo(B[0], B[1]); //Coordinates at the end of the segment
@@ -359,3 +368,5 @@ function isInside(A, B, C, pos) {
 function area(x1, y1, x2, y2, x3, y3){
     return Math.abs((x1*(y2-y3) + x2*(y3-y1)+ x3*(y1-y2))/2.0);
 }
+
+
