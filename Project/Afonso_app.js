@@ -150,6 +150,16 @@ function main_processing(nodes, canvas) {
         triangulation = triangulation.concat(newTriangles);
     });
 
+    // Clean up: Remove triangles that contain vertices from the original super triangle
+    triangulation = triangulation.filter(triangle => {
+        for (const vertex of triangle) {
+            if (!convexHull.some(p => p[0] === vertex[0] && p[1] === vertex[1])) {
+                return true;
+            }
+        }
+        return false;
+    });
+
     // Draw Delaunay triangulation edges
     ctx.beginPath();
     triangulation.forEach(triangle => {
@@ -203,18 +213,37 @@ function getEdges(triangle) {
 
 // Function to find the opposite triangle given an edge
 function findOppositeTriangle(edge, triangles) {
+    const [v1, v2] = edge;
+
     for (let i = 0; i < triangles.length; i++) {
         const triangle = triangles[i];
-        if (
-            (triangle[0] !== edge[0] && triangle[0] !== edge[1]) &&
-            (triangle[1] !== edge[0] && triangle[1] !== edge[1]) &&
-            (triangle[2] !== edge[0] && triangle[2] !== edge[1])
-        ) {
-            return triangle;
+        const count = [0, 0, 0]; // Count how many times v1 and v2 appear in the triangle
+
+        for (let j = 0; j < 3; j++) {
+            if (triangle[j][0] === v1[0] && triangle[j][1] === v1[1]) {
+                count[0]++;
+            }
+            if (triangle[j][0] === v2[0] && triangle[j][1] === v2[1]) {
+                count[1]++;
+            }
+        }
+
+        count[2] = count[0] + count[1];
+
+        // If v1 appears once and v2 appears once in the triangle, and together they appear twice,
+        // then the remaining vertex of the triangle is the opposite vertex
+        if (count[0] === 1 && count[1] === 1 && count[2] === 2) {
+            for (let j = 0; j < 3; j++) {
+                if (triangle[j] !== v1 && triangle[j] !== v2) {
+                    return triangle;
+                }
+            }
         }
     }
+
     return null;
 }
+
 
 // Your existing orientation_2 function remains the same
 function orientation_2(p, q, r) {
