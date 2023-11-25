@@ -110,55 +110,56 @@ function main_processing(nodes, canvas) {
     ctx.strokeStyle = "green"; // You can change the color to your preference
     ctx.stroke();
 
-
-    // Perform Bowyer-Watson algorithm to create Delaunay triangulation
+    // BOWYER-WATSON ALGORITHM
     let triangulation = [superTriangle];
     console.log("Initial triangulation:", triangulation);
-    console.log("Triangulation length:", triangulation.length);
 
     // Iterate over each point and add it to the triangulation
     nodes.forEach(point => {
         let badTriangles = [];
-        let newTriangles = [];
-        console.log("Current point is:", point);
 
         // Find triangles that are no longer valid with the new point
-        for (let i = triangulation.length - 1; i >= 0; i--) {
-            const triangle = triangulation[i];
-            console.log("Current triangle is:", triangle);
+        triangulation.forEach(triangle => {
             if (pointInsideCircumcircle(point, triangle)) {
-                console.log("Point inside circumcircle:", point, triangle);
                 badTriangles.push(triangle);
-                console.log("Bad triangles read from circumcircle:", badTriangles);
-                triangulation.splice(i, 1);
             }
-        }
+        });
 
-        // Create new triangles using the edges of the removed bad triangles
-        for (let i = 0; i < badTriangles.length; i++) {
-            console.log("Bad triangle read from 2nd loop:", badTriangles[i]);
-            const edges = getEdges(badTriangles[i]);
-            edges.forEach(edge => {
-                const oppositeTriangle = findOppositeTriangle(edge, badTriangles);
-                if (oppositeTriangle) {
-                    const newTriangle = [edge[0], edge[1], point];
-                    newTriangles.push(newTriangle);
+        // Find the boundary of the polygonal hole
+        let polygonEdges = [];
+        badTriangles.forEach(triangle => {
+            getEdges(triangle).forEach(edge => {
+                if (!badTriangles.some(other => other !== triangle && getEdges(other).some(e => e[0] === edge[0] && e[1] === edge[1]))) {
+                    polygonEdges.push(edge);
                 }
             });
-        }
+        });
 
-        triangulation = triangulation.concat(newTriangles);
+        // Remove bad triangles from triangulation
+        triangulation = triangulation.filter(triangle => !badTriangles.includes(triangle));
+
+        // Re-triangulate the polygonal hole
+        polygonEdges.forEach(edge => {
+            const newTri = [edge[0], edge[1], point];
+            // Ensure consistent orientation of the new triangle
+            if (orientation_2(edge[0], edge[1], point) === 1) {
+                triangulation.push(newTri);
+            } else {
+                triangulation.push([edge[1], edge[0], point]);
+            }
+        });
     });
 
     // Clean up: Remove triangles that contain vertices from the original super triangle
     triangulation = triangulation.filter(triangle => {
         for (const vertex of triangle) {
-            if (!convexHull.some(p => p[0] === vertex[0] && p[1] === vertex[1])) {
-                return true;
+            if (superTriangle.some(p => p[0] === vertex[0] && p[1] === vertex[1])) {
+                return false;
             }
         }
-        return false;
+        return true;
     });
+    console.log("Final triangulation:", triangulation);
 
     // Draw Delaunay triangulation edges
     ctx.beginPath();
@@ -170,9 +171,15 @@ function main_processing(nodes, canvas) {
         ctx.closePath();
     });
 
-    ctx.strokeStyle = "black"; // You can change the color to your preference
+    ctx.strokeStyle = "yellow"; // You can change the color to your preference
     ctx.stroke();
 }
+
+// Helper function to check if two arrays are equal
+function arraysEqual(arr1, arr2) {
+    return arr1.every((value, index) => value === arr2[index]);
+}
+
 
 function calculateCircumcenter(triangle) {
     const [p1, p2, p3] = triangle;
