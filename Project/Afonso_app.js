@@ -129,7 +129,8 @@ function main_processing(nodes, canvas) {
         let polygonEdges = [];
         badTriangles.forEach(triangle => {
             getEdges(triangle).forEach(edge => {
-                if (!badTriangles.some(other => other !== triangle && getEdges(other).some(e => e[0] === edge[0] && e[1] === edge[1]))) {
+                // Check if the edge is unique to this triangle among the bad triangles
+                if (badTriangles.filter(t => getEdges(t).some(e => arraysEqual(e, edge))).length === 1) {
                     polygonEdges.push(edge);
                 }
             });
@@ -141,38 +142,29 @@ function main_processing(nodes, canvas) {
         // Re-triangulate the polygonal hole
         polygonEdges.forEach(edge => {
             const newTri = [edge[0], edge[1], point];
-            // Ensure consistent orientation of the new triangle
-            if (orientation_2(edge[0], edge[1], point) === 1) {
-                triangulation.push(newTri);
-            } else {
-                triangulation.push([edge[1], edge[0], point]);
-            }
+            // Add the new triangle with correct orientation
+            triangulation.push(orientation_2(edge[0], edge[1], point) === 1 ? newTri : [edge[1], edge[0], point]);
         });
     });
 
     // Clean up: Remove triangles that contain vertices from the original super triangle
-    triangulation = triangulation.filter(triangle => {
-        for (const vertex of triangle) {
-            if (superTriangle.some(p => p[0] === vertex[0] && p[1] === vertex[1])) {
-                return false;
-            }
-        }
-        return true;
-    });
+    triangulation = triangulation.filter(triangle => !triangle.some(vertex => superTriangle.includes(vertex)));
+
     console.log("Final triangulation:", triangulation);
 
     // Draw Delaunay triangulation edges
     ctx.beginPath();
     triangulation.forEach(triangle => {
-        for (let i = 0; i < triangle.length; i++) {
-            const vertex = triangle[i];
+        ctx.moveTo(triangle[0][0] * canvas.width, (1 - triangle[0][1]) * canvas.height);
+        triangle.forEach(vertex => {
             ctx.lineTo(vertex[0] * canvas.width, (1 - vertex[1]) * canvas.height);
-        }
-        ctx.closePath();
+        });
+        // Close the path for the current triangle
+        ctx.lineTo(triangle[0][0] * canvas.width, (1 - triangle[0][1]) * canvas.height);
     });
-
     ctx.strokeStyle = "yellow"; // You can change the color to your preference
     ctx.stroke();
+
 }
 
 // Helper function to check if two arrays are equal
@@ -222,33 +214,23 @@ function getEdges(triangle) {
 function findOppositeTriangle(edge, triangles) {
     const [v1, v2] = edge;
 
-    for (let i = 0; i < triangles.length; i++) {
-        const triangle = triangles[i];
-        const count = [0, 0, 0]; // Count how many times v1 and v2 appear in the triangle
-
-        for (let j = 0; j < 3; j++) {
-            if (triangle[j][0] === v1[0] && triangle[j][1] === v1[1]) {
-                count[0]++;
-            }
-            if (triangle[j][0] === v2[0] && triangle[j][1] === v2[1]) {
-                count[1]++;
+    for (const triangle of triangles) {
+        let matches = 0;
+        for (const vertex of triangle) {
+            if ((vertex[0] === v1[0] && vertex[1] === v1[1]) || 
+                (vertex[0] === v2[0] && vertex[1] === v2[1])) {
+                matches++;
             }
         }
 
-        count[2] = count[0] + count[1];
-
-        // If v1 appears once and v2 appears once in the triangle, and together they appear twice,
-        // then the remaining vertex of the triangle is the opposite vertex
-        if (count[0] === 1 && count[1] === 1 && count[2] === 2) {
-            for (let j = 0; j < 3; j++) {
-                if (triangle[j] !== v1 && triangle[j] !== v2) {
-                    return triangle;
-                }
-            }
+        // If both vertices match, return the third vertex
+        if (matches === 2) {
+            return triangle.find(vertex => !(vertex[0] === v1[0] && vertex[1] === v1[1]) && 
+                                           !(vertex[0] === v2[0] && vertex[1] === v2[1]));
         }
     }
 
-    return null;
+    return null; // No opposite triangle found
 }
 
 
