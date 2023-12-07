@@ -1,11 +1,11 @@
 const circumcircleCenters = [];
 
-// Gift Wrapping Algorithm
+let triangulation = []; // Initialize triangulation array
+
 function gift_wrapping(nodes) {
     const n = nodes.length;
-    if (n < 3) return nodes; // Convex hull is not possible with less than 3 points
+    if (n < 3) return nodes;
 
-    // Find the point with the lowest y-coordinate (and leftmost if ties)
     let pivot = nodes[0];
     for (let i = 1; i < n; i++) {
         if (nodes[i][1] < pivot[1] || (nodes[i][1] === pivot[1] && nodes[i][0] < pivot[0])) {
@@ -13,7 +13,6 @@ function gift_wrapping(nodes) {
         }
     }
 
-    // Sort the points based on polar angle with respect to the pivot
     nodes.sort((a, b) => {
         const angleA = Math.atan2(a[1] - pivot[1], a[0] - pivot[0]);
         const angleB = Math.atan2(b[1] - pivot[1], b[0] - pivot[0]);
@@ -21,14 +20,12 @@ function gift_wrapping(nodes) {
         if (angleA < angleB) return -1;
         if (angleA > angleB) return 1;
 
-        // If angles are the same, prioritize the closest point
         const distanceA = Math.hypot(a[0] - pivot[0], a[1] - pivot[1]);
         const distanceB = Math.hypot(b[0] - pivot[0], b[1] - pivot[1]);
 
         return distanceA - distanceB;
     });
 
-    // Initialize the convex hull
     const convexHull = [pivot, nodes[0]];
     let i = 1;
 
@@ -43,7 +40,6 @@ function gift_wrapping(nodes) {
     return convexHull;
 }
 
-// Function to create a super triangle outside the convex hull
 function createSuperTriangle(nodes) {
     const minX = Math.min(...nodes.map(point => point[0]));
     const maxX = Math.max(...nodes.map(point => point[0]));
@@ -62,11 +58,10 @@ function createSuperTriangle(nodes) {
     return superTriangle;
 }
 
-// Your existing main_processing function remains the same
 function main_processing(nodes, canvas) {
     const ctx = canvas.getContext("2d");
 
-    // Draw points
+    // Draw nodes
     nodes.forEach(point => {
         ctx.beginPath();
         ctx.arc(point[0] * canvas.width, (1 - point[1]) * canvas.height, 3, 0, 2 * Math.PI);
@@ -75,99 +70,81 @@ function main_processing(nodes, canvas) {
         ctx.closePath();
     });
 
-    // Find the convex hull using the modified gift_wrapping function
+    // Calculate and draw convex hull
     const convexHull = gift_wrapping(nodes);
     console.log("Convex hull:", convexHull);
 
-    // Draw convex hull edges
-    ctx.beginPath();
-    ctx.moveTo(convexHull[0][0] * canvas.width, (1 - convexHull[0][1]) * canvas.height);
-    for (let i = 1; i < convexHull.length; i++) {
-        ctx.lineTo(convexHull[i][0] * canvas.width, (1 - convexHull[i][1]) * canvas.height);
-    }
-    ctx.closePath();
+    // ctx.beginPath();
+    // ctx.moveTo(convexHull[0][0] * canvas.width, (1 - convexHull[0][1]) * canvas.height);
+    // for (let i = 1; i < convexHull.length; i++) {
+    //     ctx.lineTo(convexHull[i][0] * canvas.width, (1 - convexHull[i][1]) * canvas.height);
+    // }
+    // ctx.closePath();
 
-    ctx.strokeStyle = "red";
-    ctx.stroke();
+    // ctx.strokeStyle = "red";
+    // ctx.stroke();
 
-    // Call createSuperTriangle to get the super triangle
-    const superTriangle = createSuperTriangle(convexHull);
+    // Create super triangle
+    const superTriangle = createSuperTriangle(nodes);
     console.log("Super triangle:", superTriangle);
 
-    // Draw super triangle edges
-    ctx.beginPath();
-    for (let i = 0; i < superTriangle.length; i++) {
-        ctx.moveTo(superTriangle[i][0] * canvas.width, (1 - superTriangle[i][1]) * canvas.height);
+    // Initialize triangulation with super triangle
+    triangulation = [superTriangle];
 
-        // Connect each point to every vertex of the super triangle
-        // nodes.forEach(point => {
-        //     ctx.lineTo(point[0] * canvas.width, (1 - point[1]) * canvas.height);
-        //     ctx.moveTo(superTriangle[i][0] * canvas.width, (1 - superTriangle[i][1]) * canvas.height);
-        // });
-    }
-    ctx.closePath();
-
-    ctx.strokeStyle = "green"; // You can change the color to your preference
-    ctx.stroke();
-
-    // BOWYER-WATSON ALGORITHM
-    let triangulation = [superTriangle];
-    console.log("Initial triangulation:", triangulation);
-
-    // Iterate over each point and add it to the triangulation
+    // Bowyer-Watson algorithm
     nodes.forEach(point => {
-        let badTriangles = [];
+        let badTriangles = triangulation.filter(triangle => pointInsideCircumcircle(point, triangle));
 
-        // Find triangles that are no longer valid with the new point
-        triangulation.forEach(triangle => {
-            if (pointInsideCircumcircle(point, triangle)) {
-                badTriangles.push(triangle);
-            }
-        });
-
-        // Find the boundary of the polygonal hole
-        let polygonEdges = [];
-        badTriangles.forEach(triangle => {
-            getEdges(triangle).forEach(edge => {
-                // Check if the edge is unique to this triangle among the bad triangles
-                if (badTriangles.filter(t => getEdges(t).some(e => arraysEqual(e, edge))).length === 1) {
-                    polygonEdges.push(edge);
+        let polygonEdges = new Set();
+        badTriangles.forEach(badTriangle => {
+            getEdges(badTriangle).forEach(edge => {
+                const edgeStr = JSON.stringify(edge.sort());
+                if (polygonEdges.has(edgeStr)) {
+                    polygonEdges.delete(edgeStr); // Remove edge if it's shared by another bad triangle
+                } else {
+                    polygonEdges.add(edgeStr); // Add edge if it's not shared
                 }
             });
         });
 
-        // Remove bad triangles from triangulation
         triangulation = triangulation.filter(triangle => !badTriangles.includes(triangle));
 
-        // Re-triangulate the polygonal hole
-        polygonEdges.forEach(edge => {
-            const newTri = [edge[0], edge[1], point];
-            // Add the new triangle with correct orientation
-            triangulation.push(orientation_2(edge[0], edge[1], point) === 1 ? newTri : [edge[1], edge[0], point]);
+        polygonEdges.forEach(edgeStr => {
+            const edge = JSON.parse(edgeStr);
+            if (superTriangle.includes(edge[0]) || superTriangle.includes(edge[1])) {
+                // Skip edges that are connected to the super triangle
+                return;
+            }
+            const newTriangle = [edge[0], edge[1], point];
+            triangulation.push(newTriangle);
         });
     });
 
-    // Clean up: Remove triangles that contain vertices from the original super triangle
-    triangulation = triangulation.filter(triangle => !triangle.some(vertex => superTriangle.includes(vertex)));
-
+    // Final clean-up: Remove all triangles that have any vertex from the super triangle
+    triangulation = triangulation.filter(triangle => 
+        !triangle.some(vertex => 
+            superTriangle.some(superVertex => isSamePoint(vertex, superVertex))
+        )
+    );
     console.log("Final triangulation:", triangulation);
 
-    // Draw Delaunay triangulation edges
+    // Draw final triangulation
     ctx.beginPath();
     triangulation.forEach(triangle => {
         ctx.moveTo(triangle[0][0] * canvas.width, (1 - triangle[0][1]) * canvas.height);
         triangle.forEach(vertex => {
             ctx.lineTo(vertex[0] * canvas.width, (1 - vertex[1]) * canvas.height);
         });
-        // Close the path for the current triangle
         ctx.lineTo(triangle[0][0] * canvas.width, (1 - triangle[0][1]) * canvas.height);
     });
-    ctx.strokeStyle = "yellow"; // You can change the color to your preference
+    ctx.strokeStyle = "yellow";
     ctx.stroke();
-
+}
+function isSamePoint(p1, p2) {
+    return p1[0] === p2[0] && p1[1] === p2[1];
 }
 
-// Helper function to check if two arrays are equal
+
 function arraysEqual(arr1, arr2) {
     return arr1.every((value, index) => value === arr2[index]);
 }
