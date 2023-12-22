@@ -1,6 +1,6 @@
-
-function to_click(nodes, canvas, canvasBis){
-    mesh=find_triangulation_mesh(nodes);
+function to_click(nodes, canvas, canvasBis, clearButton){
+    original_nodes=nodes
+    original_mesh=find_triangulation_mesh(nodes);
     draw_mesh(mesh, canvas);
 
     voronoi = generateVoronoiDiagram(mesh);
@@ -24,7 +24,20 @@ function to_click(nodes, canvas, canvasBis){
 
         voronoi = generateVoronoiDiagram(mesh);
         drawVoronoiDiagram(voronoi,canvasBis);
-    })
+    });
+
+    clearButton.addEventListener('click', (e)=>{
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const ctx2 = canvasBis.getContext('2d');
+        ctx2.clearRect(0,0, canvasBis.width, canvasBis.height);
+
+        original_mesh=
+        draw_mesh(original_mesh, canvas);
+
+        voronoi = generateVoronoiDiagram(mesh);
+        drawVoronoiDiagram(voronoi,canvasBis);
+    });
 }
 
 function show_initial_mesh(nodes, canvas1, canvas2){
@@ -37,6 +50,81 @@ function show_initial_mesh(nodes, canvas1, canvas2){
 
     voronoi = generateVoronoiDiagram(mesh);
     drawVoronoiDiagram(voronoi,canvas2);
+}
+
+function animation_triangulation(nodes, canvas,  animate) {
+    let triangulation = []; // Initialize triangulation array
+    let frameIndex = 0;
+
+    // Calculate and draw convex hull
+    const convexHull = gift_wrapping(nodes);
+    console.log("Convex hull:", convexHull);
+
+    // Create super triangle
+    const superTriangle = createSuperTriangle(nodes);
+    console.log("Super triangle:", superTriangle);
+
+    // Initialize triangulation with super triangle
+    triangulation = [superTriangle];
+
+    // Bowyer-Watson algorithm
+    function animateFrame() {
+        if (frameIndex >= nodes.length) {
+            // Stop animation when all points are processed
+            console.log("Final triangulation:", triangulation);
+            const mesh = create_mesh(triangulation, nodes);
+            draw_mesh(mesh, canvas);
+            return;
+        }
+
+        const point = nodes[frameIndex];
+        let badTriangles = triangulation.filter(triangle => pointInsideCircumcircle(point, triangle));
+        let polygonEdges = new Set();
+        
+        badTriangles.forEach(badTriangle => {
+            getEdges(badTriangle).forEach(edge => {
+                const edgeStr = JSON.stringify(edge.sort());
+                if (polygonEdges.has(edgeStr)) {
+                    polygonEdges.delete(edgeStr); // Remove edge if it's shared by another bad triangle
+                } else {
+                    polygonEdges.add(edgeStr); // Add edge if it's not shared
+                }
+            });
+        });
+
+        triangulation = triangulation.filter(triangle => !badTriangles.includes(triangle));
+
+        polygonEdges.forEach(edgeStr => {
+            const edge = JSON.parse(edgeStr);
+            if (superTriangle.includes(edge[0]) || superTriangle.includes(edge[1])) {
+                // Skip edges that are connected to the super triangle
+                return;
+            }
+            const newTriangle = [edge[0], edge[1], point];
+            triangulation.push(newTriangle);
+        });
+
+        // Final clean-up: Remove all triangles that have any vertex from the super triangle
+        triangulation = triangulation.filter(triangle => 
+            !triangle.some(vertex => 
+                superTriangle.some(superVertex => isSamePoint(vertex, superVertex))
+            )
+        );
+
+        // Draw the current state of the triangulation
+        const mesh = create_mesh(triangulation, nodes);
+        draw_mesh(mesh, canvas);
+
+        // Continue to the next frame
+        frameIndex++;
+
+        // Request the next animation frame
+        if (animate) {
+            requestAnimationFrame(animateFrame);
+        }
+    }
+    // Start the animation
+    animateFrame();
 }
 
 
@@ -219,6 +307,31 @@ function findOppositeTriangle(edge, triangles) {
     }
 
     return null; // No opposite triangle found
+}
+
+function prove_complexity(n){
+    nodes=[];
+    for (i=0 ; i<3 ; i++){
+        nodes.push([Math.random(), Math.random(), 0])
+    }
+
+    time=[];
+    complexity=[];
+    xValues=[];
+    for (i=1 ; i<n ; i++){
+        nodes.push([Math.random(), Math.random(), 0]);
+        start = Date.now();
+        find_triangulation_mesh(nodes);
+        t = Date.now()-start;
+        time.push(Math.log(t));
+
+        complexity.push(Math.log((i+nodes.length)*Math.log(i+nodes.length)));
+        xValues.push(i+nodes.length);
+    }
+
+
+    return [xValues, complexity, time];
+
 }
 
 
