@@ -10,7 +10,23 @@
         <script type="text/javascript" src="nodes_coarse.json"></script>
 		<script type="text/javascript" src="app.js"></script>
         <script src="https://unpkg.com/robust-predicates@3.0.1/umd/predicates.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js"></script>
 	</head>
+
+	<style>
+	#container {
+		width: 400px;
+		height: 400px;
+		position: relative;
+		background: white;
+		}
+	#animate {
+		width: 50px;
+		height: 50px;
+		position: absolute;
+		background-color: red;
+		}
+	</style>
 
 	<body>
 		<nav class="navbar">
@@ -30,23 +46,151 @@
 				</ul>
 			</div>
 		</nav>
-
+		<div style="text-align:justify">
 		<h1>
 			Welcome to the world of Delaunay triangulation and Voronoï Diagram !
-		</h1><p>
+		</h1>
+		<br>
+		<p>
 			On this website, you will be able to look at what a Delaunay triangulation can do to create a mesh in the most efficient way. Also, we will have a look at the Voronoï Diagram of the created triangulation.
 		</p>
+		<br></br>
+	<h2>Bowyer-Watson Algorithm for Delaunay Triangulations</h2>
+		<div style="text-align:justify">
+	<p >To calculate our triangulation, we used the Bowyer-Watson Algorithm which works as follows: 
+		<br></br>
+		First, it calculates a super-triangle which contains all the points inside the triangulation and adds it to the triangulation. Then, for each point in the set, it evaluates for each triangle in the triangulation if the point is inside the circumcircle of this triangle. If it is, then it adds the triangle to a set of bad triangles. After that, the algorithm goes through all the bad triangles previously computed and if an edge of this triangle is not shared by another triangle, then this edges is added to a polygon set. It then removes all the bad triangles from the triangulation. Next, from the polygon, we create triangles by connecting each edge to the current point and we add this new triangle to the triangulation. Finally, when we have all of our triangles, we go through all of them and if one of them contains a vertex from the original super-triangle, then we remove the triangle from the triangulation.
+		<br></br>
+		Here is the pseudo code of the algorithm:  
+	</p>
+		
+	</p></div>
+</div>
+    <pre>
+        <code class="Bowyer-Watson">
+            function findTriangulationMesh(nodes) {
+                let triangulation = []; // Initialize triangulation array
+                let convexHull = giftWrapping(nodes);
+                let superTriangle = createSuperTriangle(nodes);
+                triangulation = [superTriangle];
+
+                for (let point of nodes) {
+                    let badTriangles = filterTrianglesWithPointInsideCircumcircle(point, triangulation);
+                    let polygonEdges = extractUniqueEdgesFromBadTriangles(badTriangles);
+                    triangulation = filterOutBadTriangles(triangulation, badTriangles);
+
+                    for (let edgeStr of polygonEdges) {
+                        if (isEdgeConnectedToSuperTriangle(edgeStr, superTriangle)) {
+                            continue;
+                        }
+                        let newTriangle = createTriangle(edgeStr, point);
+                        addTriangleToTriangulation(newTriangle, triangulation);
+                    }
+                }
+
+                triangulation = removeTrianglesWithSuperTriangleVertices(triangulation, superTriangle);
+                let mesh = createMesh(triangulation, nodes);
+                return mesh;
+            }
+        </code>
+    </pre>
+
+	<h3>Calculation of the Voronoï Diagram</h3>
+	<div style="text-align:justify">
+	<p>
+		To compute the Voronoï Diagram of the previously computed triangulation, we proceeded as follows:\\
+		<br></br>
+From the triangulation, we created a mesh that is defined by three sets: its nodes, its faces and its half-edges. Then, for each triangle of the triangulation, we computed the center of its circumcircle and put it in a structure that associates the center to its triangle. Finally, we established the connectivity between each center of every triangle's circumcle thanks to our previous mesh structure that allowed us to establish the connectivity between each face of the triangulation. 
+	</p>
+	</div>
+		<br>
 		<p>Here, you can have a look at a mesh created from a set of point using Delaunay Triangulation and its corresponding Voronoï Diagram. </p>
-        <canvas id="canvas1" width="400" height="400", style="border:3px solid #020000;position:relative; top: 5; left: 5;"></canvas>
-		<canvas id="canvas2" width="400" height="400", style="border:3px solid #020000;position:relative; top: 5; left: 5;"></canvas>
+	</div>
+		<br></br>
+		<div style="text-align:center">
+			<canvas id="canvas1" width="400" height="400", style="border:3px solid #020000;position:relative; top: 5; left: 5;">centered canvas</canvas>
+			<canvas id="canvas2" width="400" height="400", style="border:3px solid #020000;position:relative; top: 5; left: 5;"></canvas>
+		</div>
+
 		<script>
             const canvas1 = document.getElementById("canvas1");
 			const canvas2 = document.getElementById("canvas2");
             show_initial_mesh(nodeData, canvas1, canvas2);
         </script>
+
+
+		<br></br>
+		<div style="text-align:justify">
+		<h4>Complexity of our algorithms</h4>
+
+			<p>
+				The time complexity of our algorithms are the following: the Bowyer-Watson algorithm runs in <code>O(n*log(n))</code> which is pretty great. Because we find the Voronoï Diagram from the Delaunay triangulation, the computation of the Voronoï Diagram is extremely fast and runs with a complexity of 2 times the number of faces of the triangulation. However, we wanted to note that a much more efficient algorithm to find the Voronoï Diagram and the Delaunay triangulation would be the Fortune's algorithm which runs in <code>O(n*log(n))</code> but with a much lower constant factor, making it faster. We could retrieve the Delaunay triangulation the same way but faster. Below, you can find a graph showing the complexity of our Bowyer-Watson algorithm with a log scale. The red line shows the theoretical curve and the blue line shows the actual time our algorithm took. As you can see, it does follow a complexity of <code>O(n*log(n))</code> which confirms the efficiency of our algorithm. 
+			</p></div>
+			<div style="text-align:center">
+			<img src="complexity_voronoi.jpg">
+			</div> 	
+			<br></br>
+			As for speeding up the mesh generation, two algorithms could be improved - Voronoi algorithm and the Bowyer-Watson algorithm.
+The Bowyer-Watson algorithm is an incremental method of producing Delaunay Triangulations. On average it has an <code>O(n * logn)</code> complexity, whereas at the worst case has a <code>O(n^2)</code> complexity. If the group had implemented the divide and conquer method for producing Delaunay Triangulations, the group would have achieved an average and worst time complexity of <code>O(n * log(n))</code>
+Moreover, the implemented Voronoi algorithm is a direct remapping of the structure created through the Delaunay Triangulations and it does not have the temporal speed of, for example, the Fortune's algorithm which on average has an <code>(n * log(n))</code> complexity.
+<br></br>			
+<div style="text-align:justify">
+	<h5>Animations</h5>
 		<p>
-			
-			</p>
+			Now, how about you add your own points to the mesh ? Our algorithm will do its best to find a new triangulation that will satisfy the updated set of nodes and will show you the Voronoï Diagram associated to this new triangulation ! It works as follows: when the user clicks, it calibrate the position of the click and adds it to the set of nodes. Then, the Bowyer-Watson Algorithm computes the triangulation for this new set and afterwards, we compute the Voronoï Diagram. Just click somewhere on the mesh to see how it works !
+		</p>
+	</div>
+		<br></br>
+
+		<!-- Compute an animation  -->
+
+		<div style="text-align:center">
+			<button id="clearButton">Clear the mesh !</button>
+			<canvas id="canvas3" width="400" height="400", style="border:3px solid #020000;position:relative; top: 5; left: 5;">centered canvas</canvas>
+			<canvas id="canvas4" width="400" height="400", style="border:3px solid #020000;position:relative; top: 5; left: 5;"></canvas>
+		</div>
+
+
+	
+		<script>
+			const clearButton = document.getElementById('clearButton');
+			const canvas3 = document.getElementById("canvas3");
+			const canvas4 = document.getElementById("canvas4");
+			to_click(nodeData, canvas3, canvas4, clearButton);
+		</script>
+
+
+		<!-- Compute complexity -->
+		
+		<!-- <canvas id="myChart" style="width:100%;max-width:400px"></canvas>
+
+		<script>
+			[xValues, complexity, time] = prove_complexity(600, canvas5);
+			console.log('xValues :', xValues);
+			console.log('complexity :', complexity);
+			console.log('time :', time);
+
+			new Chart("myChart", {
+				type: "line",
+				data: {
+					labels: xValues,
+					datasets: [{ 
+					data: complexity,
+					borderColor: "red",
+					fill: false
+					}
+					, { 
+					data: time,
+					borderColor: "green",
+					fill: false
+					}]
+				},
+				options: {
+					legend: {display: false}
+				}
+				});
+		</script> -->
+
 	</body>
 
 </html>
