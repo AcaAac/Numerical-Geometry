@@ -4,20 +4,49 @@
 	<head>
 		<title>Project - Group 17</title>
 		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 		<link rel="stylesheet" href="./style.css" type="text/css">
-        <script type="text/javascript" src="nodes_new_test.json"></script>
+        <script type="text/javascript" src="nodes_coarse.json"></script>
 		<script type="text/javascript" src="app.js"></script>
         <script src="https://unpkg.com/robust-predicates@3.0.1/umd/predicates.min.js"></script>
 	</head>
 
 	<body>
-        <canvas id="canvas1" width="900" height="900", style="border:3px solid #020000;position:relative; top: 5; left: 5;"></canvas>
-		<canvas id="canvas2" width="900" height="900", style="border:3px solid #020000;position:relative; top: 15; left: 5;"></canvas>
+		<nav class="navbar">
+			<div class="burger">
+				<div class="layer1"></div>
+				<div class="layer1"></div>
+				<div class="layer3"></div>
+			</div>
+			<div class="logo">
+				<span class="logo-text"><i class="fa fa-book" style="margin-right: 0.01em;"></i>Group<span style="color: #f09d51; font-size:1.1em">17</span>
+			</div>
+			<div class="menubar">
+				<ul class="list-items">
+					<li class="list-items"><a href="#">Delaunay triangulation</a></li>
+					<li class="list-items"><a href="#">Voronoï Diagram</a></li>
+					<li class="list-items"><a href="#">Animations</a></li>
+				</ul>
+			</div>
+		</nav>
+
+		<h1>
+			Welcome to the world of Delaunay triangulation and Voronoï Diagram !
+		</h1><p>
+			On this website, you will be able to look at what a Delaunay triangulation can do to create a mesh in the most efficient way. Also, we will have a look at the Voronoï Diagram of the created triangulation.
+		</p>
+		<p>Here, you can have a look at a mesh created from a set of point using Delaunay Triangulation and its corresponding Voronoï Diagram. </p>
+        <canvas id="canvas1" width="400" height="400", style="border:3px solid #020000;position:relative; top: 5; left: 5;"></canvas>
+		<canvas id="canvas2" width="400" height="400", style="border:3px solid #020000;position:relative; top: 5; left: 5;"></canvas>
 		<script>
             const canvas1 = document.getElementById("canvas1");
 			const canvas2 = document.getElementById("canvas2");
-            main(nodeData, canvas1);
+            show_initial_mesh(nodeData, canvas1, canvas2);
         </script>
+		<p>
+			
+			</p>
 	</body>
 
 </html>
