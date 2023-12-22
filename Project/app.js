@@ -1,18 +1,21 @@
-function main(nodes, canvas){
+
+function to_click(nodes, canvas, canvasBis){
     mesh=find_triangulation_mesh(nodes);
     draw_mesh(mesh, canvas);
 
     voronoi = generateVoronoiDiagram(mesh);
-    drawVoronoiDiagram(voronoi,canvas);
+    drawVoronoiDiagram(voronoi,canvasBis);
 
     canvas.addEventListener('mousedown', (e)=>{
         const rect = canvas.getBoundingClientRect();
-    	const x = e.clientX - rect.left;
-    	const y = e.clientY - rect.top;
-    	pos = [x, y, 0];
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        pos = [x/450, y/450, 0];
 
         const ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const ctx2 = canvasBis.getContext('2d');
+        ctx2.clearRect(0,0, canvasBis.width, canvasBis.height);
 
         nodes.push(pos);
         //console.log('New nodes', nodes);
@@ -20,8 +23,20 @@ function main(nodes, canvas){
         draw_mesh(mesh, canvas);
 
         voronoi = generateVoronoiDiagram(mesh);
-        drawVoronoiDiagram(voronoi,canvas);
+        drawVoronoiDiagram(voronoi,canvasBis);
     })
+}
+
+function show_initial_mesh(nodes, canvas1, canvas2){
+    mesh=find_triangulation_mesh(nodes);
+    draw_mesh(mesh, canvas1);
+
+    nodes.forEach(point => {
+        draw_point(canvas2, point[0]*450, point[1]*450, 'blue');
+    })
+
+    voronoi = generateVoronoiDiagram(mesh);
+    drawVoronoiDiagram(voronoi,canvas2);
 }
 
 
@@ -280,107 +295,107 @@ function draw_point(canvas, x, y, color){
 
 function create_mesh(triangulation, nodes){
     mesh = {
-		nodes : [],
-		faces : [], 
-		edges : []
-	};
+        nodes : [],
+        faces : [], 
+        edges : []
+    };
 
     // Create nodes
-	for ( i = 0 ; i<nodes.length ; i++){
-		mesh.nodes.push( {
-			id: i,
-			pos: nodes[i]
-		})
-	}
+    for ( i = 0 ; i<nodes.length ; i++){
+        mesh.nodes.push( {
+            id: i,
+            pos: nodes[i]
+        })
+    }
 
     // Create faces and half edges
-	nodePairToEdge = {};
-	for (i = 0 ; i< triangulation.length ; i++){
-		mesh.faces.push( {
-			id: i,
-			incidentEdge: null 
-	    })
+    nodePairToEdge = {};
+    for (i = 0 ; i< triangulation.length ; i++){
+        mesh.faces.push( {
+            id: i,
+            incidentEdge: null 
+        })
 
-		// Create 3 half_edges in the triangle
-		const shape = triangulation[0].length;
+        // Create 3 half_edges in the triangle
+        const shape = triangulation[0].length;
 
-		for (j = 0 ; j<shape ; j++){
-			origin = nodes.findIndex(row => row.toString() === triangulation[i][j].toString());
-			destination = nodes.findIndex(row => row.toString() === triangulation[i][(j+1)%shape].toString());
-			mesh.edges.push( {
-				incidentFace: i,
-				orig: mesh.nodes[origin],
-				dest: mesh.nodes[destination],
-				next:null,
-				oppo: null,
-				
-			})
+        for (j = 0 ; j<shape ; j++){
+            origin = nodes.findIndex(row => row.toString() === triangulation[i][j].toString());
+            destination = nodes.findIndex(row => row.toString() === triangulation[i][(j+1)%shape].toString());
+            mesh.edges.push( {
+                incidentFace: i,
+                orig: mesh.nodes[origin],
+                dest: mesh.nodes[destination],
+                next:null,
+                oppo: null,
+
+            })
             if (nodePairToEdge[mesh.nodes[origin].id.toString() + "_" + mesh.nodes[destination].id.toString()]!=null){
-			    nodePairToEdge[mesh.nodes[origin].id.toString() + "_" + mesh.nodes[destination].id.toString()]=mesh.edges[shape*i+j];
+                nodePairToEdge[mesh.nodes[origin].id.toString() + "_" + mesh.nodes[destination].id.toString()]=mesh.edges[shape*i+j];
             } else {nodePairToEdge[mesh.nodes[destination].id.toString() + "_" + mesh.nodes[origin].id.toString()] = mesh.edges[shape*i+j];}
-		}
+        }
 
         // Determine the connectivity of the half-edges
         for (j = 0; j < shape; j++) {
             mesh.edges[shape*i+j].next = mesh.edges[shape*i+(j+1)%shape];
         }
 
-		mesh.faces[i].incidentEdge = mesh.edges[shape*i];
-	}
+        mesh.faces[i].incidentEdge = mesh.edges[shape*i];
+    }
 
-	for (let i = 0; i < mesh.edges.length; i++) {
-		const e = mesh.edges[i];
-		e.oppo = nodePairToEdge[e.dest.id.toString() + "_" + e.orig.id.toString()];
+    for (let i = 0; i < mesh.edges.length; i++) {
+        const e = mesh.edges[i];
+        e.oppo = nodePairToEdge[e.dest.id.toString() + "_" + e.orig.id.toString()];
 
-	}
+    }
 
     return mesh;
 
 }
 
 function draw_mesh(mesh, canvas) {
-	size_adapt(canvas, mesh.nodes, offset=5);
+    size_adapt(canvas, mesh.nodes, offset=5);
 
-	// Draw triangles
-	context = canvas.getContext('2d');
-	context.strokeStyle = "black";
-	for (face of mesh.faces) {
-		edge = face.incidentEdge;
-		face_nodes = [edge.orig.pos, edge.dest.pos, edge.next.dest.pos];
-		context.beginPath();
-		context.moveTo(face_nodes[0][0], face_nodes[0][1]);
-		context.lineTo(face_nodes[1][0], face_nodes[1][1]);
-		context.lineTo(face_nodes[2][0], face_nodes[2][1]);
-		context.lineTo(face_nodes[0][0], face_nodes[0][1]);
-		context.stroke();
+    // Draw triangles
+    context = canvas.getContext('2d');
+    context.strokeStyle = "black";
+    for (face of mesh.faces) {
+        edge = face.incidentEdge;
+        face_nodes = [edge.orig.pos, edge.dest.pos, edge.next.dest.pos];
+        context.beginPath();
+        context.moveTo(face_nodes[0][0], face_nodes[0][1]);
+        context.lineTo(face_nodes[1][0], face_nodes[1][1]);
+        context.lineTo(face_nodes[2][0], face_nodes[2][1]);
+        context.lineTo(face_nodes[0][0], face_nodes[0][1]);
+        context.stroke();
 
-		x_G = (face.incidentEdge.orig.pos[0]+face.incidentEdge.dest.pos[0]+face.incidentEdge.next.dest.pos[0])/3;
+        x_G = (face.incidentEdge.orig.pos[0]+face.incidentEdge.dest.pos[0]+face.incidentEdge.next.dest.pos[0])/3;
         y_G = (face.incidentEdge.orig.pos[1]+face.incidentEdge.dest.pos[1]+face.incidentEdge.next.dest.pos[1])/3;
-        context.fillText(face.id.toString(), x_G, y_G);
+        //context.fillText(face.id.toString(), x_G, y_G);
         //context.fillText(face.incidentEdge.orig.id.toString(), face.incidentEdge.orig.pos[0], face.incidentEdge.orig.pos[1]);
         // context.fillText(face.incidentEdge.dest.id.toString(), face.incidentEdge.dest.pos[0], face.incidentEdge.dest.pos[1]);
         // context.fillText(face.incidentEdge.next.dest.id.toString(), face.incidentEdge.next.dest.pos[0], face.incidentEdge.next.dest.pos[1]);
-	}
+    }
 
 }
 
 
 function size_adapt(canvas, nodes, offset){
     // bounding box of the mesh
-	let xMin = Number.MAX_VALUE;
-	let yMin = Number.MAX_VALUE;
-	let xMax = Number.MIN_VALUE;
-	let yMax = Number.MIN_VALUE;
-	for (node of nodes) {
-		xMax = Math.max(xMax, node.pos[0]);
-		xMin = Math.min(xMin, node.pos[0]);
-		yMax = Math.max(yMax, node.pos[1]);
-		yMin = Math.min(yMin, node.pos[1]);
-	}
-	const xRange = xMax - xMin;
-	const yRange = yMax - yMin;
-	const scale = Math.min(canvas.width/xRange, canvas.height/yRange);
-    
+    let xMin = Number.MAX_VALUE;
+    let yMin = Number.MAX_VALUE;
+    let xMax = Number.MIN_VALUE;
+    let yMax = Number.MIN_VALUE;
+    for (node of nodes) {
+        xMax = Math.max(xMax, node.pos[0]);
+        xMin = Math.min(xMin, node.pos[0]);
+        yMax = Math.max(yMax, node.pos[1]);
+        yMin = Math.min(yMin, node.pos[1]);
+    }
+    const xRange = xMax - xMin;
+    const yRange = yMax - yMin;
+    const scale = Math.min(canvas.width/xRange, canvas.height/yRange);
+
     for (node of nodes)
         node.pos = transform(node.pos, scale, xMin, yMin, offset);
 
@@ -388,7 +403,7 @@ function size_adapt(canvas, nodes, offset){
 }
 
 function transform(pos, scale, xMin, yMin, offset) {
-    return [offset+(pos[0]-xMin)*scale, offset+(pos[1]-yMin)*scale];
+    return [pos[0]*450, pos[1]*450];
 }
 
 function draw_edge(A,B,canvas, color){
@@ -397,5 +412,5 @@ function draw_edge(A,B,canvas, color){
     context.beginPath(); //Begins the segment
     context.moveTo(A[0], A[1]); //Coordinates at the begin of the segment
     context.lineTo(B[0], B[1]); //Coordinates at the end of the segment
-    context.stroke() ; //Draws a line
+    context.stroke();
 }
